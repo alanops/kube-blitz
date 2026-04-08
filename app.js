@@ -361,7 +361,9 @@ const game = {
   roundTotal: 0,
   currentPromptNumber: 1,
   promptHistory: [],
-  historyIndex: -1
+  historyIndex: -1,
+  roundTimerBase: Infinity,
+  timerCap: Infinity
 };
 
 function normalizeCommand(command) {
@@ -490,6 +492,29 @@ function showReference() {
   ui.docLink.href = game.currentPrompt.docs;
 }
 
+function getTimerSettings(mode) {
+  if (mode === 'speed60') {
+    return { base: 60, cap: 75 };
+  }
+  if (mode === 'speed180') {
+    return { base: 180, cap: 210 };
+  }
+  return { base: Infinity, cap: Infinity };
+}
+
+function awardTimeBonus() {
+  if (!Number.isFinite(game.timer)) {
+    return 0;
+  }
+  const weight = game.currentPrompt?.weight || 5;
+  const baseBonus = game.mode === 'speed180' ? 5 : 4;
+  const weightBonus = Math.min(Math.floor(weight / 4), 3);
+  const streakBonus = Math.min(game.streak, 3);
+  const bonus = baseBonus + weightBonus + streakBonus;
+  game.timer = Math.min(game.timer + bonus, game.timerCap);
+  return bonus;
+}
+
 function updateStats() {
   ui.ghostToggle.checked = game.ghostEnabled;
   const total = game.correct + game.incorrect;
@@ -540,11 +565,12 @@ function startRound() {
   ui.summaryPanel.classList.add('hidden');
   setFeedback('Round started. Go fast, stay precise.');
 
-  if (game.mode === 'speed60') {
-    game.timer = 60;
-    game.lives = Infinity;
-  } else if (game.mode === 'speed180') {
-    game.timer = 180;
+  const timerSettings = getTimerSettings(game.mode);
+  game.roundTimerBase = timerSettings.base;
+  game.timerCap = timerSettings.cap;
+
+  if (game.mode === 'speed60' || game.mode === 'speed180') {
+    game.timer = timerSettings.base;
     game.lives = Infinity;
   } else if (game.mode === 'survival') {
     game.timer = Infinity;
@@ -578,15 +604,17 @@ function submitAnswer() {
   game.asked += 1;
 
   if (valid) {
-    const timeBonus = Number.isFinite(game.timer) ? Math.max(5, Math.floor(game.timer / 10)) : 10;
+    const speedBonus = Number.isFinite(game.timer) ? Math.max(5, Math.floor(game.timer / 10)) : 10;
     const streakBonus = Math.min(game.streak * 5, 40);
     const weightBonus = (game.currentPrompt.weight || 5) * 5;
-    const points = 100 + timeBonus + streakBonus + weightBonus;
+    const points = 100 + speedBonus + streakBonus + weightBonus;
     game.score += points;
     game.streak += 1;
     game.correct += 1;
+    const timeBonus = awardTimeBonus();
     const feedbackClass = game.streak >= 3 ? 'combo-hot' : 'feedback-good';
-    setFeedback(game.streak >= 3 ? `Combo x${game.streak}. +${points} points` : `Correct. +${points} points`, feedbackClass);
+    const timeBonusText = timeBonus ? ` · +${timeBonus}s` : '';
+    setFeedback(game.streak >= 3 ? `Combo x${game.streak}. +${points} points${timeBonusText}` : `Correct. +${points} points${timeBonusText}`, feedbackClass);
     addHistory(`✅ ${game.currentPrompt.title}`, true);
     choosePrompt();
   } else {

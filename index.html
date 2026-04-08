@@ -16,6 +16,7 @@
       <div class="top-stats">
         <div><span class="label">Mode</span><span id="modeValue">Speed 60</span></div>
         <div><span class="label">Score</span><span id="scoreValue">0</span></div>
+        <div><span class="label">Best</span><span id="bestValue">0</span></div>
         <div><span class="label">Streak</span><span id="streakValue">0</span></div>
         <div><span class="label">Timer</span><span id="timerValue">60</span></div>
       </div>
@@ -81,7 +82,7 @@
           <input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type the kubectl command here" />
           <button type="submit">Submit</button>
         </form>
-        <div id="helperText" class="helper-text">Exact syntax is not always required — common equivalent spacing is normalized.</div>
+        <div id="helperText" class="helper-text">Exact syntax is not always required — common equivalent spacing is normalized. Shortcuts: Enter submit · N next · S start · D reveal.</div>
 
         <div id="answerPanel" class="answer-panel hidden">
           <div class="panel-title">Reference</div>
@@ -90,6 +91,11 @@
           <div><span class="label">Why</span></div>
           <p id="explanationText"></p>
           <a id="docLink" href="https://kubernetes.io/docs/reference/kubectl/" target="_blank" rel="noreferrer">Official Kubernetes docs</a>
+        </div>
+
+        <div id="summaryPanel" class="answer-panel hidden">
+          <div class="panel-title">Round Summary</div>
+          <p id="summaryText"></p>
         </div>
       </section>
 

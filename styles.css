@@ -112,6 +112,10 @@ button.secondary { background: linear-gradient(180deg, #223d60, #18304f); color:
 .feedback-good { color: var(--good); }
 .feedback-bad { color: var(--bad); }
 .feedback-warn { color: var(--warn); }
+
+#feedbackValue.combo-hot {
+  color: var(--purple);
+}
 @media (max-width: 1160px) {
   .grid-layout { grid-template-columns: 1fr; }
   .left-panel,.center-panel,.right-panel { min-height:auto; }

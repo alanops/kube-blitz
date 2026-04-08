@@ -97,8 +97,58 @@ const prompts = [
     acceptable: ['kubectl annotate deployment api owner=ops'],
     explanation: 'kubectl annotate applies metadata imperatively to a resource.',
     docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_annotate/'
+  },
+  {
+    category: 'pods', difficulty: 'easy',
+    title: 'Busybox Scout',
+    text: 'Create a pod named scout using image busybox.',
+    acceptable: ['kubectl run scout --image=busybox'],
+    explanation: 'kubectl run remains a fast imperative way to create a single pod from an image.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_run/'
+  },
+  {
+    category: 'deployments', difficulty: 'medium',
+    title: 'Scale Frontend',
+    text: 'Scale deployment frontend to 5 replicas.',
+    acceptable: ['kubectl scale deployment frontend --replicas=5'],
+    explanation: 'Use kubectl scale to adjust replicas on a deployment imperatively.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_scale/'
+  },
+  {
+    category: 'services', difficulty: 'medium',
+    title: 'Expose API',
+    text: 'Expose deployment api on port 8080.',
+    acceptable: ['kubectl expose deployment api --port=8080'],
+    explanation: 'kubectl expose creates a service directly from a workload resource.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_expose/'
+  },
+  {
+    category: 'config', difficulty: 'easy',
+    title: 'Namespace Ops',
+    text: 'Create namespace staging.',
+    acceptable: ['kubectl create namespace staging'],
+    explanation: 'Creating namespaces quickly is a common imperative task in the CKA.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_create/kubectl_create_namespace/'
+  },
+  {
+    category: 'config', difficulty: 'hard',
+    title: 'ConfigMap Region',
+    text: 'Create configmap region-config from literal region=eu-west-1.',
+    acceptable: ['kubectl create configmap region-config --from-literal=region=eu-west-1'],
+    explanation: 'ConfigMaps built from literals are common imperative setup tasks.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_create/kubectl_create_configmap/'
+  },
+  {
+    category: 'ops', difficulty: 'medium',
+    title: 'Label Nodes',
+    text: 'Annotate deployment frontend with team=platform.',
+    acceptable: ['kubectl annotate deployment frontend team=platform'],
+    explanation: 'Imperative annotation commands are useful for quick metadata updates.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_annotate/'
   }
 ];
+
+const STORAGE_KEY = 'kube-blitz-best-v1';
 
 const ui = {
   modeSelect: document.getElementById('modeSelect'),
@@ -108,6 +158,7 @@ const ui = {
   nextButton: document.getElementById('nextButton'),
   revealButton: document.getElementById('revealButton'),
   scoreValue: document.getElementById('scoreValue'),
+  bestValue: document.getElementById('bestValue'),
   streakValue: document.getElementById('streakValue'),
   timerValue: document.getElementById('timerValue'),
   modeValue: document.getElementById('modeValue'),
@@ -124,6 +175,8 @@ const ui = {
   expectedCommand: document.getElementById('expectedCommand'),
   explanationText: document.getElementById('explanationText'),
   docLink: document.getElementById('docLink'),
+  summaryPanel: document.getElementById('summaryPanel'),
+  summaryText: document.getElementById('summaryText'),
   progressFill: document.getElementById('progressFill'),
   progressText: document.getElementById('progressText'),
   correctValue: document.getElementById('correctValue'),
@@ -144,7 +197,9 @@ const game = {
   incorrect: 0,
   asked: 0,
   currentPrompt: null,
-  filteredPrompts: []
+  filteredPrompts: [],
+  remainingPrompts: [],
+  bestScore: 0
 };
 
 function normalizeCommand(command) {
@@ -156,6 +211,18 @@ function normalizeCommand(command) {
     .toLowerCase();
 }
 
+function loadBest() {
+  try {
+    game.bestScore = Number(localStorage.getItem(STORAGE_KEY) || 0);
+  } catch {
+    game.bestScore = 0;
+  }
+}
+
+function saveBest() {
+  localStorage.setItem(STORAGE_KEY, String(game.bestScore));
+}
+
 function getFilteredPrompts() {
   return prompts.filter((prompt) => {
     const categoryOk = ui.categorySelect.value === 'all' || prompt.category === ui.categorySelect.value;
@@ -165,14 +232,19 @@ function getFilteredPrompts() {
 }
 
 function choosePrompt() {
-  const pool = game.filteredPrompts.length ? game.filteredPrompts : prompts;
-  const next = pool[Math.floor(Math.random() * pool.length)];
+  const pool = game.remainingPrompts.length ? game.remainingPrompts : (game.filteredPrompts.length ? [...game.filteredPrompts] : [...prompts]);
+  if (!game.remainingPrompts.length) {
+    game.remainingPrompts = [...pool];
+  }
+  const index = Math.floor(Math.random() * game.remainingPrompts.length);
+  const [next] = game.remainingPrompts.splice(index, 1);
   game.currentPrompt = next;
   ui.promptDifficulty.textContent = next.difficulty[0].toUpperCase() + next.difficulty.slice(1);
   ui.promptTitle.textContent = next.title;
   ui.promptText.textContent = next.text;
   ui.promptMeta.textContent = `${next.category} · type the imperative kubectl command`;
   ui.answerPanel.classList.add('hidden');
+  ui.summaryPanel.classList.add('hidden');
   ui.answerInput.value = '';
   ui.answerInput.focus();
 }
@@ -204,6 +276,7 @@ function updateStats() {
   const total = game.correct + game.incorrect;
   const accuracy = total ? Math.round((game.correct / total) * 100) : 0;
   ui.scoreValue.textContent = game.score;
+  ui.bestValue.textContent = game.bestScore;
   ui.streakValue.textContent = game.streak;
   ui.timerValue.textContent = Number.isFinite(game.timer) ? game.timer : '∞';
   ui.modeValue.textContent = ui.modeSelect.options[ui.modeSelect.selectedIndex].text;
@@ -218,8 +291,15 @@ function updateStats() {
 function endRound(reason) {
   clearInterval(game.timerId);
   game.running = false;
+  if (game.score > game.bestScore) {
+    game.bestScore = game.score;
+    saveBest();
+  }
   setFeedback(`Round over: ${reason}`, 'feedback-warn');
+  ui.summaryPanel.classList.remove('hidden');
+  ui.summaryText.textContent = `Final score: ${game.score}. Correct: ${game.correct}. Incorrect: ${game.incorrect}. Best score: ${game.bestScore}.`;
   showReference();
+  updateStats();
 }
 
 function startRound() {
@@ -231,8 +311,10 @@ function startRound() {
   game.incorrect = 0;
   game.asked = 0;
   game.filteredPrompts = getFilteredPrompts();
+  game.remainingPrompts = [...(game.filteredPrompts.length ? game.filteredPrompts : prompts)];
   game.running = true;
   ui.historyList.innerHTML = '';
+  ui.summaryPanel.classList.add('hidden');
   setFeedback('Round started. Go fast, stay precise.');
 
   if (game.mode === 'speed60') {
@@ -275,10 +357,12 @@ function submitAnswer() {
   if (valid) {
     const timeBonus = Number.isFinite(game.timer) ? Math.max(5, Math.floor(game.timer / 10)) : 10;
     const streakBonus = Math.min(game.streak * 5, 40);
-    game.score += 100 + timeBonus + streakBonus;
+    const points = 100 + timeBonus + streakBonus;
+    game.score += points;
     game.streak += 1;
     game.correct += 1;
-    setFeedback(`Correct. +${100 + timeBonus + streakBonus} points`, 'feedback-good');
+    const feedbackClass = game.streak >= 3 ? 'combo-hot' : 'feedback-good';
+    setFeedback(game.streak >= 3 ? `Combo x${game.streak}. +${points} points` : `Correct. +${points} points`, feedbackClass);
     addHistory(`✅ ${game.currentPrompt.title}`, true);
     choosePrompt();
   } else {
@@ -315,4 +399,24 @@ ui.answerForm.addEventListener('submit', (event) => {
   submitAnswer();
 });
 
+document.addEventListener('keydown', (event) => {
+  const target = event.target;
+  const typing = target === ui.answerInput;
+  if (event.code === 'KeyS' && !typing) {
+    event.preventDefault();
+    startRound();
+  } else if (event.code === 'KeyN' && !typing) {
+    event.preventDefault();
+    if (game.running) {
+      choosePrompt();
+      setFeedback('Skipped. New prompt loaded.', 'feedback-warn');
+    }
+  } else if (event.code === 'KeyD' && !typing) {
+    event.preventDefault();
+    showReference();
+    setFeedback('Reference revealed. Study the command shape.', 'feedback-warn');
+  }
+});
+
+loadBest();
 updateStats();

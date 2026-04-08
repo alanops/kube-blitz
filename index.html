@@ -56,6 +56,10 @@
           <button id="nextButton" class="secondary">Next Prompt</button>
           <button id="revealButton" class="secondary">Reveal Answer</button>
         </div>
+        <label class="field inline-field">
+          <span>Typing Ghost</span>
+          <input id="ghostToggle" type="checkbox" checked />
+        </label>
 
         <div class="status-card">
           <div class="label">Lives</div>
@@ -79,7 +83,10 @@
 
         <form id="answerForm" class="terminal-form">
           <span class="prompt">$</span>
-          <input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type the kubectl command here" />
+          <div class="answer-stack">
+            <div id="answerGhost" class="answer-ghost" aria-hidden="true"></div>
+            <input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type the kubectl command here" />
+          </div>
           <button type="submit">Submit</button>
         </form>
         <div id="helperText" class="helper-text">Exact syntax is not always required — common equivalent spacing is normalized. Shortcuts: Enter submit · N next · S start · D reveal.</div>

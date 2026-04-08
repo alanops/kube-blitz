@@ -157,6 +157,7 @@ const ui = {
   startButton: document.getElementById('startButton'),
   nextButton: document.getElementById('nextButton'),
   revealButton: document.getElementById('revealButton'),
+  ghostToggle: document.getElementById('ghostToggle'),
   scoreValue: document.getElementById('scoreValue'),
   bestValue: document.getElementById('bestValue'),
   streakValue: document.getElementById('streakValue'),
@@ -170,6 +171,7 @@ const ui = {
   promptMeta: document.getElementById('promptMeta'),
   answerForm: document.getElementById('answerForm'),
   answerInput: document.getElementById('answerInput'),
+  answerGhost: document.getElementById('answerGhost'),
   helperText: document.getElementById('helperText'),
   answerPanel: document.getElementById('answerPanel'),
   expectedCommand: document.getElementById('expectedCommand'),
@@ -199,7 +201,8 @@ const game = {
   currentPrompt: null,
   filteredPrompts: [],
   remainingPrompts: [],
-  bestScore: 0
+  bestScore: 0,
+  ghostEnabled: true
 };
 
 function normalizeCommand(command) {
@@ -213,14 +216,21 @@ function normalizeCommand(command) {
 
 function loadBest() {
   try {
-    game.bestScore = Number(localStorage.getItem(STORAGE_KEY) || 0);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    game.bestScore = Number(parsed.bestScore || 0);
+    game.ghostEnabled = parsed.ghostEnabled !== false;
   } catch {
     game.bestScore = 0;
+    game.ghostEnabled = true;
   }
 }
 
 function saveBest() {
-  localStorage.setItem(STORAGE_KEY, String(game.bestScore));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    bestScore: game.bestScore,
+    ghostEnabled: game.ghostEnabled
+  }));
 }
 
 function getFilteredPrompts() {
@@ -229,6 +239,24 @@ function getFilteredPrompts() {
     const difficultyOk = ui.difficultySelect.value === 'mixed' || prompt.difficulty === ui.difficultySelect.value;
     return categoryOk && difficultyOk;
   });
+}
+
+function updateGhost() {
+  if (!game.ghostEnabled || !game.currentPrompt) {
+    ui.answerGhost.textContent = '';
+    return;
+  }
+  const raw = ui.answerInput.value;
+  const target = game.currentPrompt.acceptable[0] || '';
+  if (!raw.trim()) {
+    ui.answerGhost.textContent = target;
+    return;
+  }
+  if (target.toLowerCase().startsWith(raw.trim().toLowerCase())) {
+    ui.answerGhost.textContent = raw + target.slice(raw.length);
+  } else {
+    ui.answerGhost.textContent = '';
+  }
 }
 
 function choosePrompt() {
@@ -246,6 +274,7 @@ function choosePrompt() {
   ui.answerPanel.classList.add('hidden');
   ui.summaryPanel.classList.add('hidden');
   ui.answerInput.value = '';
+  updateGhost();
   ui.answerInput.focus();
 }
 
@@ -273,6 +302,7 @@ function showReference() {
 }
 
 function updateStats() {
+  ui.ghostToggle.checked = game.ghostEnabled;
   const total = game.correct + game.incorrect;
   const accuracy = total ? Math.round((game.correct / total) * 100) : 0;
   ui.scoreValue.textContent = game.score;
@@ -397,6 +427,12 @@ ui.revealButton.addEventListener('click', () => {
 ui.answerForm.addEventListener('submit', (event) => {
   event.preventDefault();
   submitAnswer();
+});
+ui.answerInput.addEventListener('input', updateGhost);
+ui.ghostToggle.addEventListener('change', () => {
+  game.ghostEnabled = ui.ghostToggle.checked;
+  saveBest();
+  updateGhost();
 });
 
 document.addEventListener('keydown', (event) => {

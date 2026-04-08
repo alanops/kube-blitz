@@ -164,6 +164,138 @@ const prompts = [
     ],
     explanation: 'kubectl expose pod creates a ClusterIP Service with selectors derived from the pod labels, which satisfies the requirement to use the right labels.',
     docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_expose/'
+  },
+  {
+    category: 'ops', difficulty: 'hard',
+    title: 'Orange Rescue',
+    text: 'A new application orange is deployed. There is something wrong with it. Identify and fix the issue.',
+    details: [
+      ['Question', 'Is the issue fixed?'],
+      ['Target', 'deployment/orange'],
+      ['Constraint', 'Use imperative commands'],
+      ['Fix', 'Repair the deployment image']
+    ],
+    weight: 12,
+    acceptable: [
+      'kubectl set image deployment/orange orange=nginx:1.27'
+    ],
+    explanation: 'This blitz version focuses on the imperative repair step. The expected command updates the orange deployment to a healthy image.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_set/kubectl_set_image/'
+  },
+  {
+    category: 'services', difficulty: 'hard',
+    title: 'HR Web App Service',
+    text: 'Expose the hr-web-app created in the previous task as a service named hr-web-app-service, accessible on port 30082 on the nodes of the cluster. The web application listens on port 8080.',
+    details: [
+      ['Name', 'hr-web-app-service'],
+      ['Type', 'NodePort'],
+      ['Endpoints', '2'],
+      ['Port', '8080'],
+      ['NodePort', '30082']
+    ],
+    weight: 8,
+    acceptable: [
+      'kubectl expose deployment hr-web-app --name=hr-web-app-service --type=NodePort --port=8080 --target-port=8080 --node-port=30082',
+      'kubectl expose deployment hr-web-app --name=hr-web-app-service --port=8080 --target-port=8080 --type=NodePort --node-port=30082'
+    ],
+    explanation: 'Use kubectl expose deployment with NodePort and the required node-port value to publish the app on cluster nodes.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_expose/'
+  },
+  {
+    category: 'config', difficulty: 'hard',
+    title: 'PV Analytics',
+    text: 'Create a Persistent Volume with the given specification.',
+    details: [
+      ['Volume name', 'pv-analytics'],
+      ['Storage', '100Mi'],
+      ['Access mode', 'ReadWriteMany'],
+      ['Host path', '/pv/data-analytics'],
+      ['Checks', 'Volume name, storage capacity, accessMode, hostPath']
+    ],
+    weight: 8,
+    acceptable: [
+      'kubectl create -f pv-analytics.yaml'
+    ],
+    explanation: 'This one is intentionally exam-style: imperative workflow often means generating or applying a manifest file for PV resources. In this blitz version, the expected answer is the apply/create step after preparing the YAML.',
+    docs: 'https://kubernetes.io/docs/concepts/storage/persistent-volumes/'
+  },
+  {
+    category: 'ops', difficulty: 'hard',
+    title: 'Webapp HPA',
+    text: 'Create a Horizontal Pod Autoscaler (HPA) with name webapp-hpa for the deployment named kkapp-deploy in the default namespace with the webapp-hpa.yaml file located under the root folder.',
+    details: [
+      ['HPA name', 'webapp-hpa'],
+      ['Deployment', 'kkapp-deploy'],
+      ['Metric', 'CPU utilization'],
+      ['Target average', '50%'],
+      ['Scale-down stabilization', '300 seconds'],
+      ['File', '/webapp-hpa.yaml']
+    ],
+    weight: 10,
+    acceptable: [
+      'kubectl apply -f webapp-hpa.yaml',
+      'kubectl create -f webapp-hpa.yaml'
+    ],
+    explanation: 'Like the PV task, this prompt represents the imperative apply/create step after preparing the required manifest. The file-based workflow is common in exam-style Kubernetes tasks.',
+    docs: 'https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/'
+  },
+  {
+    category: 'ops', difficulty: 'hard',
+    title: 'Analytics VPA',
+    text: 'Deploy a Vertical Pod Autoscaler (VPA) with name analytics-vpa for the deployment named analytics-deployment in the default namespace.',
+    details: [
+      ['VPA name', 'analytics-vpa'],
+      ['Deployment', 'analytics-deployment'],
+      ['Requests', 'Adjust CPU and memory automatically'],
+      ['Update policy', 'Recreate'],
+      ['Checks', 'Created for deployment and updatePolicy set to Recreate']
+    ],
+    weight: 9,
+    acceptable: [
+      'kubectl apply -f analytics-vpa.yaml',
+      'kubectl create -f analytics-vpa.yaml'
+    ],
+    explanation: 'This exam-style task assumes you prepare the VPA manifest and then deploy it imperatively with kubectl apply/create.',
+    docs: 'https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler'
+  },
+  {
+    category: 'services', difficulty: 'hard',
+    title: 'Web Gateway',
+    text: 'Create a Kubernetes Gateway resource with the required listener configuration.',
+    details: [
+      ['Name', 'web-gateway'],
+      ['Namespace', 'nginx-gateway'],
+      ['Gateway Class Name', 'nginx'],
+      ['Listener protocol', 'HTTP'],
+      ['Listener port', '80'],
+      ['Listener name', 'http']
+    ],
+    weight: 6,
+    acceptable: [
+      'kubectl apply -f web-gateway.yaml',
+      'kubectl create -f web-gateway.yaml'
+    ],
+    explanation: 'Gateway API resources are usually created from manifests. This prompt focuses on the imperative apply/create step once the file is ready.',
+    docs: 'https://kubernetes.io/docs/concepts/services-networking/gateway/'
+  },
+  {
+    category: 'ops', difficulty: 'hard',
+    title: 'Helm Chart Upgrade',
+    text: 'Update the helm repository and then upgrade the kk-mock1 release in namespace kk-ns to chart version 6.11.2.',
+    details: [
+      ['Release', 'kk-mock1'],
+      ['Namespace', 'kk-ns'],
+      ['Action', 'Update repo and upgrade chart'],
+      ['Chart version', '6.11.2'],
+      ['Checks', 'Deployment running and chart version upgraded']
+    ],
+    weight: 8,
+    acceptable: [
+      'helm repo update && helm upgrade kk-mock1 podinfo/podinfo --version 6.11.2 -n kk-ns',
+      'helm repo update && helm upgrade kk-mock1 podinfo/podinfo -n kk-ns --version 6.11.2'
+    ],
+    explanation: 'This prompt captures the imperative two-step workflow: refresh repository metadata, then run helm upgrade with the target chart version.',
+    docs: 'https://helm.sh/docs/helm/helm_upgrade/'
   }
 ];
 
@@ -174,6 +306,7 @@ const ui = {
   difficultySelect: document.getElementById('difficultySelect'),
   categorySelect: document.getElementById('categorySelect'),
   startButton: document.getElementById('startButton'),
+  prevButton: document.getElementById('prevButton'),
   nextButton: document.getElementById('nextButton'),
   revealButton: document.getElementById('revealButton'),
   ghostToggle: document.getElementById('ghostToggle'),
@@ -226,7 +359,9 @@ const game = {
   bestScore: 0,
   ghostEnabled: true,
   roundTotal: 0,
-  currentPromptNumber: 1
+  currentPromptNumber: 1,
+  promptHistory: [],
+  historyIndex: -1
 };
 
 function normalizeCommand(command) {
@@ -283,15 +418,9 @@ function updateGhost() {
   }
 }
 
-function choosePrompt() {
-  const pool = game.remainingPrompts.length ? game.remainingPrompts : (game.filteredPrompts.length ? [...game.filteredPrompts] : [...prompts]);
-  if (!game.remainingPrompts.length) {
-    game.remainingPrompts = [...pool];
-  }
-  const index = Math.floor(Math.random() * game.remainingPrompts.length);
-  const [next] = game.remainingPrompts.splice(index, 1);
-  game.currentPrompt = next;
-  game.currentPromptNumber = Math.min(game.roundTotal - game.remainingPrompts.length, game.roundTotal || 1);
+function renderCurrentPrompt() {
+  const next = game.currentPrompt;
+  if (!next) return;
   ui.promptCounter.textContent = `${game.currentPromptNumber} / ${game.roundTotal || 1}`;
   ui.promptDifficulty.textContent = next.difficulty[0].toUpperCase() + next.difficulty.slice(1);
   ui.promptTitle.textContent = next.title;
@@ -310,6 +439,32 @@ function choosePrompt() {
   ui.answerInput.value = '';
   updateGhost();
   ui.answerInput.focus();
+  ui.prevButton.disabled = game.historyIndex <= 0;
+}
+
+function choosePrompt() {
+  const pool = game.remainingPrompts.length ? game.remainingPrompts : (game.filteredPrompts.length ? [...game.filteredPrompts] : [...prompts]);
+  if (!game.remainingPrompts.length) {
+    game.remainingPrompts = [...pool];
+  }
+  const index = Math.floor(Math.random() * game.remainingPrompts.length);
+  const [next] = game.remainingPrompts.splice(index, 1);
+  game.currentPrompt = next;
+  game.currentPromptNumber = Math.min(game.roundTotal - game.remainingPrompts.length, game.roundTotal || 1);
+  if (game.historyIndex < game.promptHistory.length - 1) {
+    game.promptHistory = game.promptHistory.slice(0, game.historyIndex + 1);
+  }
+  game.promptHistory.push(next);
+  game.historyIndex = game.promptHistory.length - 1;
+  renderCurrentPrompt();
+}
+
+function showPreviousPrompt() {
+  if (game.historyIndex <= 0) return;
+  game.historyIndex -= 1;
+  game.currentPrompt = game.promptHistory[game.historyIndex];
+  game.currentPromptNumber = Math.max(1, game.historyIndex + 1);
+  renderCurrentPrompt();
 }
 
 function setFeedback(text, cls = '') {
@@ -378,6 +533,8 @@ function startRound() {
   game.remainingPrompts = [...(game.filteredPrompts.length ? game.filteredPrompts : prompts)];
   game.roundTotal = game.remainingPrompts.length;
   game.currentPromptNumber = 1;
+  game.promptHistory = [];
+  game.historyIndex = -1;
   game.running = true;
   ui.historyList.innerHTML = '';
   ui.summaryPanel.classList.add('hidden');
@@ -452,6 +609,11 @@ function submitAnswer() {
 }
 
 ui.startButton.addEventListener('click', startRound);
+ui.prevButton.addEventListener('click', () => {
+  if (!game.running) return;
+  showPreviousPrompt();
+  setFeedback('Moved to previous prompt.', 'feedback-warn');
+});
 ui.nextButton.addEventListener('click', () => {
   if (!game.running) return;
   choosePrompt();

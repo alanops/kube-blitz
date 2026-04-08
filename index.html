@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kube Blitz</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="panel topbar">
+      <div>
+        <div class="eyebrow">Arcade Kubernetes Command Trainer</div>
+        <h1>Kube Blitz</h1>
+      </div>
+      <div class="top-stats">
+        <div><span class="label">Mode</span><span id="modeValue">Speed 60</span></div>
+        <div><span class="label">Score</span><span id="scoreValue">0</span></div>
+        <div><span class="label">Streak</span><span id="streakValue">0</span></div>
+        <div><span class="label">Timer</span><span id="timerValue">60</span></div>
+      </div>
+    </header>
+
+    <main class="grid-layout">
+      <section class="panel left-panel">
+        <div class="panel-title">Game Setup</div>
+        <label class="field">Mode
+          <select id="modeSelect">
+            <option value="speed60">Speed 60</option>
+            <option value="speed180">Speed 180</option>
+            <option value="survival">Survival</option>
+            <option value="drill">Drill</option>
+          </select>
+        </label>
+        <label class="field">Difficulty
+          <select id="difficultySelect">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </label>
+        <label class="field">Category
+          <select id="categorySelect">
+            <option value="all" selected>All</option>
+            <option value="pods">Pods</option>
+            <option value="deployments">Deployments</option>
+            <option value="services">Services</option>
+            <option value="ops">Ops</option>
+            <option value="config">Config</option>
+          </select>
+        </label>
+        <div class="button-row">
+          <button id="startButton">Start Round</button>
+          <button id="nextButton" class="secondary">Next Prompt</button>
+          <button id="revealButton" class="secondary">Reveal Answer</button>
+        </div>
+
+        <div class="status-card">
+          <div class="label">Lives</div>
+          <div id="livesValue">∞</div>
+        </div>
+
+        <div class="status-card">
+          <div class="label">Feedback</div>
+          <div id="feedbackValue">Pick a mode and hit Start Round.</div>
+        </div>
+      </section>
+
+      <section class="panel center-panel">
+        <div class="panel-title">Prompt</div>
+        <div id="promptCard" class="prompt-card">
+          <div id="promptDifficulty" class="difficulty-chip">Medium</div>
+          <h2 id="promptTitle">Ready to train?</h2>
+          <p id="promptText">Hit Start Round to begin a command sprint.</p>
+          <div id="promptMeta" class="prompt-meta">Imperative Kubernetes command practice.</div>
+        </div>
+
+        <form id="answerForm" class="terminal-form">
+          <span class="prompt">$</span>
+          <input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type the kubectl command here" />
+          <button type="submit">Submit</button>
+        </form>
+        <div id="helperText" class="helper-text">Exact syntax is not always required — common equivalent spacing is normalized.</div>
+
+        <div id="answerPanel" class="answer-panel hidden">
+          <div class="panel-title">Reference</div>
+          <div><span class="label">Expected Command</span></div>
+          <pre id="expectedCommand"></pre>
+          <div><span class="label">Why</span></div>
+          <p id="explanationText"></p>
+          <a id="docLink" href="https://kubernetes.io/docs/reference/kubectl/" target="_blank" rel="noreferrer">Official Kubernetes docs</a>
+        </div>
+      </section>
+
+      <section class="panel right-panel">
+        <div class="panel-title">Round Stats</div>
+        <div class="meter"><div id="progressFill" class="meter-fill"></div></div>
+        <div id="progressText" class="small-text">Questions answered: 0</div>
+
+        <div class="status-card">
+          <div class="label">Correct</div>
+          <div id="correctValue">0</div>
+        </div>
+        <div class="status-card">
+          <div class="label">Incorrect</div>
+          <div id="incorrectValue">0</div>
+        </div>
+        <div class="status-card">
+          <div class="label">Accuracy</div>
+          <div id="accuracyValue">0%</div>
+        </div>
+
+        <div class="panel-title section-gap">Recent Results</div>
+        <div id="historyList" class="history-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -75,10 +75,15 @@
       <section class="panel center-panel">
         <div class="panel-title">Prompt</div>
         <div id="promptCard" class="prompt-card">
-          <div id="promptDifficulty" class="difficulty-chip">Medium</div>
+          <div class="prompt-topline">
+            <div id="promptCounter" class="label">1 / 1</div>
+            <div id="promptDifficulty" class="difficulty-chip">Medium</div>
+          </div>
           <h2 id="promptTitle">Ready to train?</h2>
+          <div id="promptWeight" class="prompt-weight">Weight: 5</div>
           <p id="promptText">Hit Start Round to begin a command sprint.</p>
           <div id="promptMeta" class="prompt-meta">Imperative Kubernetes command practice.</div>
+          <div id="promptDetails" class="prompt-details hidden"></div>
         </div>
 
         <form id="answerForm" class="terminal-form">

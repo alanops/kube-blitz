@@ -61,8 +61,35 @@ button.secondary { background: linear-gradient(180deg, #223d60, #18304f); color:
   padding: 14px;
   margin-bottom: 14px;
 }
+.prompt-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
 .prompt-card h2 { margin:10px 0; font-size:1.7rem; }
+.prompt-weight {
+  color: var(--warn);
+  font-size: .92rem;
+  margin-bottom: 10px;
+}
 .prompt-meta,.small-text,.helper-text { color: var(--muted); }
+.prompt-details {
+  margin-top: 12px;
+  border-top: 1px solid rgba(82,200,255,.1);
+  padding-top: 12px;
+  display: grid;
+  gap: 6px;
+}
+.prompt-detail-item {
+  color: var(--text);
+  font-size: .94rem;
+}
+.prompt-detail-item strong {
+  color: var(--muted);
+  display: inline-block;
+  min-width: 110px;
+}
 .difficulty-chip {
   display:inline-block;
   background: rgba(183,146,255,.12);

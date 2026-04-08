@@ -145,6 +145,25 @@ const prompts = [
     acceptable: ['kubectl annotate deployment frontend team=platform'],
     explanation: 'Imperative annotation commands are useful for quick metadata updates.',
     docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_annotate/'
+  },
+  {
+    category: 'services', difficulty: 'hard',
+    title: 'Messaging Service',
+    text: 'Create a service named messaging-service to expose the messaging pod within the cluster on port 6379. The messaging pod is running in the default namespace.',
+    details: [
+      ['Service', 'messaging-service'],
+      ['Port', '6379'],
+      ['Type', 'ClusterIP'],
+      ['Namespace', 'default'],
+      ['Constraint', 'Use imperative commands'],
+      ['Note', 'Use the right labels']
+    ],
+    weight: 8,
+    acceptable: [
+      'kubectl expose pod messaging --name=messaging-service --port=6379 --type=ClusterIP'
+    ],
+    explanation: 'kubectl expose pod creates a ClusterIP Service with selectors derived from the pod labels, which satisfies the requirement to use the right labels.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_expose/'
   }
 ];
 
@@ -165,10 +184,13 @@ const ui = {
   modeValue: document.getElementById('modeValue'),
   livesValue: document.getElementById('livesValue'),
   feedbackValue: document.getElementById('feedbackValue'),
+  promptCounter: document.getElementById('promptCounter'),
   promptDifficulty: document.getElementById('promptDifficulty'),
   promptTitle: document.getElementById('promptTitle'),
+  promptWeight: document.getElementById('promptWeight'),
   promptText: document.getElementById('promptText'),
   promptMeta: document.getElementById('promptMeta'),
+  promptDetails: document.getElementById('promptDetails'),
   answerForm: document.getElementById('answerForm'),
   answerInput: document.getElementById('answerInput'),
   answerGhost: document.getElementById('answerGhost'),
@@ -202,7 +224,9 @@ const game = {
   filteredPrompts: [],
   remainingPrompts: [],
   bestScore: 0,
-  ghostEnabled: true
+  ghostEnabled: true,
+  roundTotal: 0,
+  currentPromptNumber: 1
 };
 
 function normalizeCommand(command) {
@@ -267,10 +291,20 @@ function choosePrompt() {
   const index = Math.floor(Math.random() * game.remainingPrompts.length);
   const [next] = game.remainingPrompts.splice(index, 1);
   game.currentPrompt = next;
+  game.currentPromptNumber = Math.min(game.roundTotal - game.remainingPrompts.length, game.roundTotal || 1);
+  ui.promptCounter.textContent = `${game.currentPromptNumber} / ${game.roundTotal || 1}`;
   ui.promptDifficulty.textContent = next.difficulty[0].toUpperCase() + next.difficulty.slice(1);
   ui.promptTitle.textContent = next.title;
+  ui.promptWeight.textContent = `Weight: ${next.weight || 5}`;
   ui.promptText.textContent = next.text;
   ui.promptMeta.textContent = `${next.category} · type the imperative kubectl command`;
+  if (next.details?.length) {
+    ui.promptDetails.classList.remove('hidden');
+    ui.promptDetails.innerHTML = next.details.map(([label, value]) => `<div class="prompt-detail-item"><strong>${label}:</strong> ${value}</div>`).join('');
+  } else {
+    ui.promptDetails.classList.add('hidden');
+    ui.promptDetails.innerHTML = '';
+  }
   ui.answerPanel.classList.add('hidden');
   ui.summaryPanel.classList.add('hidden');
   ui.answerInput.value = '';
@@ -342,6 +376,8 @@ function startRound() {
   game.asked = 0;
   game.filteredPrompts = getFilteredPrompts();
   game.remainingPrompts = [...(game.filteredPrompts.length ? game.filteredPrompts : prompts)];
+  game.roundTotal = game.remainingPrompts.length;
+  game.currentPromptNumber = 1;
   game.running = true;
   ui.historyList.innerHTML = '';
   ui.summaryPanel.classList.add('hidden');
@@ -387,7 +423,8 @@ function submitAnswer() {
   if (valid) {
     const timeBonus = Number.isFinite(game.timer) ? Math.max(5, Math.floor(game.timer / 10)) : 10;
     const streakBonus = Math.min(game.streak * 5, 40);
-    const points = 100 + timeBonus + streakBonus;
+    const weightBonus = (game.currentPrompt.weight || 5) * 5;
+    const points = 100 + timeBonus + streakBonus + weightBonus;
     game.score += points;
     game.streak += 1;
     game.correct += 1;

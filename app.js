@@ -439,6 +439,7 @@ function renderCurrentPrompt() {
   ui.answerPanel.classList.add('hidden');
   ui.summaryPanel.classList.add('hidden');
   ui.answerInput.value = '';
+  resetPromptTimer();
   updateGhost();
   ui.answerInput.focus();
   ui.prevButton.disabled = game.historyIndex <= 0;
@@ -494,25 +495,73 @@ function showReference() {
 
 function getTimerSettings(mode) {
   if (mode === 'speed60') {
-    return { base: 60, cap: 75 };
+    return { base: 60, cap: 75, perQuestion: false };
   }
   if (mode === 'speed180') {
-    return { base: 180, cap: 210 };
+    return { base: 180, cap: 210, perQuestion: false };
   }
-  return { base: Infinity, cap: Infinity };
+  if (mode === 'question15') {
+    return { base: 15, cap: 15, perQuestion: true };
+  }
+  return { base: Infinity, cap: Infinity, perQuestion: false };
+}
+
+function getDifficultyBonus(prompt) {
+  const difficulty = prompt?.difficulty || 'medium';
+  if (difficulty === 'hard') return 30;
+  if (difficulty === 'medium') return 15;
+  return 0;
+}
+
+function resetPromptTimer() {
+  if (game.mode === 'question15') {
+    game.timer = game.roundTimerBase;
+  }
 }
 
 function awardTimeBonus() {
-  if (!Number.isFinite(game.timer)) {
+  if (!Number.isFinite(game.timer) || game.mode === 'question15') {
     return 0;
   }
   const weight = game.currentPrompt?.weight || 5;
+  const difficulty = game.currentPrompt?.difficulty || 'medium';
   const baseBonus = game.mode === 'speed180' ? 5 : 4;
-  const weightBonus = Math.min(Math.floor(weight / 4), 3);
+  const weightBonus = Math.min(Math.floor(weight / 3), 4);
+  const difficultyBonus = difficulty === 'hard' ? 3 : difficulty === 'medium' ? 1 : 0;
   const streakBonus = Math.min(game.streak, 3);
-  const bonus = baseBonus + weightBonus + streakBonus;
+  const bonus = baseBonus + weightBonus + difficultyBonus + streakBonus;
   game.timer = Math.min(game.timer + bonus, game.timerCap);
   return bonus;
+}
+
+function applySkipPenalty() {
+  if (!game.running || !game.currentPrompt) return;
+  const penalty = 25 + Math.round((game.currentPrompt.weight || 5) * 1.5);
+  game.score = Math.max(0, game.score - penalty);
+  game.streak = 0;
+  if (Number.isFinite(game.timer) && game.mode !== 'question15') {
+    game.timer = Math.max(1, game.timer - 3);
+  }
+  addHistory(`⏭️ ${game.currentPrompt.title}`, false);
+  choosePrompt();
+  setFeedback(`Skipped. -${penalty} points${Number.isFinite(game.timer) && game.mode !== 'question15' ? ' · -3s' : ''}`, 'feedback-warn');
+  updateStats();
+}
+
+function handlePromptTimeout() {
+  if (game.mode !== 'question15' || !game.currentPrompt) {
+    game.timer = 0;
+    updateStats();
+    endRound('time expired');
+    return;
+  }
+  game.asked += 1;
+  game.streak = 0;
+  game.incorrect += 1;
+  addHistory(`⏱️ ${game.currentPrompt.title}`, false);
+  setFeedback('Time up. Fresh prompt loaded.', 'feedback-bad');
+  choosePrompt();
+  updateStats();
 }
 
 function updateStats() {
@@ -569,7 +618,7 @@ function startRound() {
   game.roundTimerBase = timerSettings.base;
   game.timerCap = timerSettings.cap;
 
-  if (game.mode === 'speed60' || game.mode === 'speed180') {
+  if (game.mode === 'speed60' || game.mode === 'speed180' || game.mode === 'question15') {
     game.timer = timerSettings.base;
     game.lives = Infinity;
   } else if (game.mode === 'survival') {
@@ -587,9 +636,7 @@ function startRound() {
     game.timerId = setInterval(() => {
       game.timer -= 1;
       if (game.timer <= 0) {
-        game.timer = 0;
-        updateStats();
-        endRound('time expired');
+        handlePromptTimeout();
         return;
       }
       updateStats();
@@ -607,7 +654,8 @@ function submitAnswer() {
     const speedBonus = Number.isFinite(game.timer) ? Math.max(5, Math.floor(game.timer / 10)) : 10;
     const streakBonus = Math.min(game.streak * 5, 40);
     const weightBonus = (game.currentPrompt.weight || 5) * 5;
-    const points = 100 + speedBonus + streakBonus + weightBonus;
+    const difficultyBonus = getDifficultyBonus(game.currentPrompt);
+    const points = 100 + speedBonus + streakBonus + weightBonus + difficultyBonus;
     game.score += points;
     game.streak += 1;
     game.correct += 1;
@@ -644,8 +692,7 @@ ui.prevButton.addEventListener('click', () => {
 });
 ui.nextButton.addEventListener('click', () => {
   if (!game.running) return;
-  choosePrompt();
-  setFeedback('Skipped. New prompt loaded.', 'feedback-warn');
+  applySkipPenalty();
 });
 ui.revealButton.addEventListener('click', () => {
   showReference();
@@ -671,8 +718,7 @@ document.addEventListener('keydown', (event) => {
   } else if (event.code === 'KeyN' && !typing) {
     event.preventDefault();
     if (game.running) {
-      choosePrompt();
-      setFeedback('Skipped. New prompt loaded.', 'feedback-warn');
+      applySkipPenalty();
     }
   } else if (event.code === 'KeyD' && !typing) {
     event.preventDefault();

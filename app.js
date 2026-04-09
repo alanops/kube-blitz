@@ -369,6 +369,7 @@ const game = {
 function normalizeCommand(command) {
   return command
     .trim()
+    .replace(/^k(\s+)/i, 'kubectl$1')
     .replace(/\s+/g, ' ')
     .replace(/\s*=\s*/g, '=')
     .replace(/\s+([{}])/g, '$1')

@@ -279,14 +279,37 @@ const prompts = [
     docs: 'https://kubernetes.io/docs/concepts/services-networking/gateway/'
   },
   {
-    category: 'ops', difficulty: 'hard',
+    category: 'helm', difficulty: 'easy',
+    title: 'Helm Repo Refresh',
+    text: 'Refresh local Helm repository metadata so newly published chart versions are available.',
+    acceptable: [
+      'helm repo update'
+    ],
+    explanation: 'helm repo update refreshes cached repository metadata so Helm can see new chart versions before install or upgrade.',
+    docs: 'https://helm.sh/docs/helm/helm_repo_update/'
+  },
+  {
+    category: 'helm', difficulty: 'medium',
+    title: 'Helm Install with Namespace',
+    text: 'Install release podinfo-demo from chart podinfo/podinfo into namespace demo-ns and create the namespace if needed.',
+    acceptable: [
+      'helm install podinfo-demo podinfo/podinfo -n demo-ns --create-namespace',
+      'helm install podinfo-demo podinfo/podinfo --namespace demo-ns --create-namespace',
+      'helm install podinfo-demo podinfo/podinfo --create-namespace -n demo-ns'
+    ],
+    explanation: 'helm install deploys a chart as a named release, and --create-namespace avoids a separate namespace creation step.',
+    docs: 'https://helm.sh/docs/helm/helm_install/'
+  },
+  {
+    category: 'helm', difficulty: 'hard',
     title: 'Helm Chart Upgrade',
-    text: 'Update the helm repository and then upgrade the kk-mock1 release in namespace kk-ns to chart version 6.11.2.',
+    text: 'One co-worker deployed a podinfo Helm chart kk-mock1 in the kk-ns namespace. A new update was pushed. Update the Helm repository, then upgrade the release to chart version 6.11.2.',
     details: [
       ['Release', 'kk-mock1'],
       ['Namespace', 'kk-ns'],
-      ['Action', 'Update repo and upgrade chart'],
-      ['Chart version', '6.11.2'],
+      ['Chart', 'podinfo/podinfo'],
+      ['Step 1', 'Refresh Helm repo metadata'],
+      ['Step 2', 'Upgrade to chart version 6.11.2'],
       ['Checks', 'Deployment running and chart version upgraded']
     ],
     weight: 8,
@@ -294,8 +317,129 @@ const prompts = [
       'helm repo update && helm upgrade kk-mock1 podinfo/podinfo --version 6.11.2 -n kk-ns',
       'helm repo update && helm upgrade kk-mock1 podinfo/podinfo -n kk-ns --version 6.11.2'
     ],
-    explanation: 'This prompt captures the imperative two-step workflow: refresh repository metadata, then run helm upgrade with the target chart version.',
+    explanation: 'This is the common Helm exam flow: refresh repository metadata first, then run helm upgrade against the existing release with the required chart version.',
     docs: 'https://helm.sh/docs/helm/helm_upgrade/'
+  },
+  {
+    category: 'helm', difficulty: 'medium',
+    title: 'Helm Deployment Check',
+    text: 'Check whether the kk-mock1 deployment is running successfully in namespace kk-ns after the Helm upgrade.',
+    acceptable: [
+      'kubectl rollout status deployment/kk-mock1 -n kk-ns',
+      'kubectl get deploy,pods -n kk-ns'
+    ],
+    explanation: 'kubectl rollout status gives the fastest yes/no verification, while kubectl get deploy,pods is also a common manual check after a Helm upgrade.',
+    docs: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/kubectl_rollout_status/'
+  },
+  {
+    category: 'helm', difficulty: 'medium',
+    title: 'Helm Version Check',
+    text: 'Verify the kk-mock1 release in namespace kk-ns is upgraded to chart version 6.11.2.',
+    acceptable: [
+      'helm list -n kk-ns',
+      'helm status kk-mock1 -n kk-ns',
+      'helm list --namespace kk-ns',
+      'helm status kk-mock1 --namespace kk-ns'
+    ],
+    explanation: 'helm list shows the installed chart version for releases in a namespace, and helm status is a common follow-up for release-level verification.',
+    docs: 'https://helm.sh/docs/helm/helm_list/'
+  },
+  {
+    category: 'helm', difficulty: 'medium',
+    title: 'Helm Rollback',
+    text: 'Rollback release api to revision 2 in namespace prod.',
+    acceptable: [
+      'helm rollback api 2 -n prod',
+      'helm rollback api 2 --namespace prod'
+    ],
+    explanation: 'helm rollback restores a release to an earlier revision and is a common operational Helm task.',
+    docs: 'https://helm.sh/docs/helm/helm_rollback/'
+  },
+  {
+    category: 'helm', difficulty: 'easy',
+    title: 'Helm Repo Add',
+    text: 'Add the podinfo Helm repository using alias podinfo and URL https://stefanprodan.github.io/podinfo.',
+    acceptable: [
+      'helm repo add podinfo https://stefanprodan.github.io/podinfo'
+    ],
+    explanation: 'helm repo add registers a chart repository locally under a short alias so you can install and upgrade charts from it.',
+    docs: 'https://helm.sh/docs/helm/helm_repo_add/'
+  },
+  {
+    category: 'helm', difficulty: 'medium',
+    title: 'Helm Uninstall',
+    text: 'Remove the release podinfo-demo from namespace demo-ns.',
+    acceptable: [
+      'helm uninstall podinfo-demo -n demo-ns',
+      'helm uninstall podinfo-demo --namespace demo-ns'
+    ],
+    explanation: 'helm uninstall removes an installed release and its managed resources from the target namespace.',
+    docs: 'https://helm.sh/docs/helm/helm_uninstall/'
+  },
+  {
+    category: 'helm', difficulty: 'medium',
+    title: 'Helm Get Values',
+    text: 'Show the user-supplied values for release kk-mock1 in namespace kk-ns.',
+    acceptable: [
+      'helm get values kk-mock1 -n kk-ns',
+      'helm get values kk-mock1 --namespace kk-ns'
+    ],
+    explanation: 'helm get values displays the values currently associated with a release, which is useful before changing or debugging it.',
+    docs: 'https://helm.sh/docs/helm/helm_get_values/'
+  },
+  {
+    category: 'helm', difficulty: 'medium',
+    title: 'Helm History',
+    text: 'Display the revision history for release kk-mock1 in namespace kk-ns.',
+    acceptable: [
+      'helm history kk-mock1 -n kk-ns',
+      'helm history kk-mock1 --namespace kk-ns'
+    ],
+    explanation: 'helm history shows prior revisions of a release, which is commonly used before rollback or upgrade troubleshooting.',
+    docs: 'https://helm.sh/docs/helm/helm_history/'
+  },
+  {
+    category: 'helm', difficulty: 'hard',
+    title: 'Helm Upgrade or Install',
+    text: 'Ensure release podinfo-demo exists in namespace demo-ns using chart podinfo/podinfo. Use a single command that installs if missing and upgrades if present.',
+    acceptable: [
+      'helm upgrade --install podinfo-demo podinfo/podinfo -n demo-ns --create-namespace',
+      'helm upgrade --install podinfo-demo podinfo/podinfo --namespace demo-ns --create-namespace',
+      'helm upgrade --install podinfo-demo podinfo/podinfo --create-namespace -n demo-ns'
+    ],
+    explanation: 'helm upgrade --install is a common exam shortcut because it handles both the first deployment and later upgrades in one command.',
+    docs: 'https://helm.sh/docs/helm/helm_upgrade/'
+  },
+  {
+    category: 'helm', difficulty: 'medium',
+    title: 'Helm Show Values',
+    text: 'Display the default values for chart podinfo/podinfo.',
+    acceptable: [
+      'helm show values podinfo/podinfo'
+    ],
+    explanation: 'helm show values prints the chart defaults, which is useful before overriding configuration during install or upgrade.',
+    docs: 'https://helm.sh/docs/helm/helm_show_values/'
+  },
+  {
+    category: 'helm', difficulty: 'easy',
+    title: 'Helm List All Namespaces',
+    text: 'List Helm releases across all namespaces.',
+    acceptable: [
+      'helm list -A',
+      'helm list --all-namespaces'
+    ],
+    explanation: 'helm list -A is the quick way to inspect releases cluster-wide instead of limiting the view to one namespace.',
+    docs: 'https://helm.sh/docs/helm/helm_list/'
+  },
+  {
+    category: 'helm', difficulty: 'medium',
+    title: 'Helm Search Versions',
+    text: 'Search the configured repositories for chart podinfo and show all available versions.',
+    acceptable: [
+      'helm search repo podinfo --versions'
+    ],
+    explanation: 'helm search repo with --versions is a common way to confirm the exact chart version you need before an upgrade.',
+    docs: 'https://helm.sh/docs/helm/helm_search_repo/'
   }
 ];
 
@@ -429,7 +573,7 @@ function renderCurrentPrompt() {
   ui.promptTitle.textContent = next.title;
   ui.promptWeight.textContent = `Weight: ${next.weight || 5}`;
   ui.promptText.textContent = next.text;
-  ui.promptMeta.textContent = `${next.category} · type the imperative kubectl command`;
+  ui.promptMeta.textContent = `${next.category} · type the exact kubectl or helm command`;
   if (next.details?.length) {
     ui.promptDetails.classList.remove('hidden');
     ui.promptDetails.innerHTML = next.details.map(([label, value]) => `<div class="prompt-detail-item"><strong>${label}:</strong> ${value}</div>`).join('');

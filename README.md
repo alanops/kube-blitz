@@ -12,8 +12,14 @@ You get a prompt such as:
 - create a namespace
 - create a configmap
 - set an image
+- update a Helm repo
+- add a Helm repo
+- upgrade a Helm release
+- inspect Helm values/history
+- uninstall a Helm release
+- verify a Helm rollout
 
-You type the imperative `kubectl` command as fast and accurately as possible.
+You type the exact `kubectl` or `helm` command as fast and accurately as possible.
 
 ## Modes
 - **Speed 60** - score as much as possible in 60 seconds
@@ -27,6 +33,7 @@ You type the imperative `kubectl` command as fast and accurately as possible.
 - Services
 - Ops
 - Config
+- Helm
 - All
 
 ## Run locally

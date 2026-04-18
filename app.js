@@ -881,9 +881,7 @@ document.addEventListener('keydown', (event) => {
 loadBest();
 updateStats();
 
-// --- CKA Tips integration (flagged during rollout) ---
-const tipsFlagOn = new URLSearchParams(location.search).has('tips');
-
+// --- CKA Tips integration (always on) ---
 async function initTipsMode() {
   const { loadTips, tipToPrompt } = await import('./tips-loader.js');
   const { loadState, saveState, selectDueTips, recordResult, incrementSession } =
@@ -981,6 +979,6 @@ async function initTipsMode() {
   });
 }
 
-if (tipsFlagOn) {
-  initTipsMode().catch(err => console.error('tips mode failed', err));
-}
+initTipsMode().catch(err => {
+  console.error('tips mode failed, falling back to static prompts', err);
+});

@@ -47,3 +47,7 @@ Then open:
 ```text
 http://localhost:8090
 ```
+
+## Tips & mastery
+Prompts come from the shared [cka-tips](https://github.com/alanops/cka-tips) corpus.
+Mastery state is tracked in `localStorage['cka.leitner.v1']` and shared with CKArcade.

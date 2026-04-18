@@ -791,8 +791,14 @@ function startRound() {
 
 function submitAnswer() {
   if (!game.running || !game.currentPrompt) return;
-  const answer = normalizeCommand(ui.answerInput.value);
-  const valid = game.currentPrompt.acceptable.map(normalizeCommand).includes(answer);
+  const typedRaw = ui.answerInput.value;
+  const answer = normalizeCommand(typedRaw);
+  let valid;
+  if (typeof window.__tipsCheckAnswer === 'function') {
+    valid = window.__tipsCheckAnswer(game.currentPrompt, typedRaw);
+  } else {
+    valid = game.currentPrompt.acceptable.map(normalizeCommand).includes(answer);
+  }
   game.asked += 1;
 
   if (valid) {
@@ -874,3 +880,33 @@ document.addEventListener('keydown', (event) => {
 
 loadBest();
 updateStats();
+
+// --- CKA Tips integration (flagged during rollout) ---
+const tipsFlagOn = new URLSearchParams(location.search).has('tips');
+
+async function initTipsMode() {
+  const { loadTips, tipToPrompt } = await import('./tips-loader.js');
+  const { loadState, saveState, selectDueTips, recordResult, incrementSession } =
+    await import('./leitner.js');
+  const { matches } = await import('./normalise.js');
+
+  const tips = await loadTips();
+  let state = incrementSession(loadState());
+  saveState(state);
+
+  const due = selectDueTips(state, tips, { count: 40 });
+  const pool = due.length ? due : tips;
+  prompts.length = 0;
+  for (const t of pool) prompts.push(tipToPrompt(t));
+
+  window.__tipsCheckAnswer = (promptObj, typed) => {
+    const ok = matches(typed, promptObj.acceptable[0], promptObj.acceptable.slice(1));
+    state = recordResult(state, promptObj.id, ok);
+    saveState(state);
+    return ok;
+  };
+}
+
+if (tipsFlagOn) {
+  initTipsMode().catch(err => console.error('tips mode failed', err));
+}

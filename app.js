@@ -881,9 +881,7 @@ document.addEventListener('keydown', (event) => {
 loadBest();
 updateStats();
 
-// --- CKA Tips integration (flagged during rollout) ---
-const tipsFlagOn = new URLSearchParams(location.search).has('tips');
-
+// --- CKA Tips integration (always on) ---
 async function initTipsMode() {
   const { loadTips, tipToPrompt } = await import('./tips-loader.js');
   const { loadState, saveState, selectDueTips, recordResult, incrementSession } =
@@ -905,8 +903,82 @@ async function initTipsMode() {
     saveState(state);
     return ok;
   };
+
+  function showToast(tipId, deltaBox) {
+    const el = document.getElementById('tip-toast');
+    if (!el) return;
+    const arrow = deltaBox > 0 ? '↑' : deltaBox < 0 ? '↓' : '·';
+    el.textContent = `${tipId} ${arrow} box ${state.tips[tipId].box}`;
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 1800);
+  }
+
+  function renderMastery() {
+    const domains = ['cluster', 'workloads', 'networking', 'storage', 'troubleshooting'];
+    const host = document.getElementById('mastery-bars');
+    host.replaceChildren();
+    for (const d of domains) {
+      const domainTips = tips.filter(t => t.domain === d);
+      const mastered = domainTips.filter(t => state.tips[t.id]?.mastered).length;
+      const pct = domainTips.length ? Math.round(100 * mastered / domainTips.length) : 0;
+
+      const row = document.createElement('div');
+      row.className = 'mastery-bar';
+
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = d;
+
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      const fill = document.createElement('div');
+      fill.className = 'fill';
+      fill.style.width = `${pct}%`;
+      bar.appendChild(fill);
+
+      const count = document.createElement('span');
+      count.textContent = `${mastered}/${domainTips.length}`;
+
+      row.append(name, bar, count);
+      host.appendChild(row);
+    }
+  }
+
+  const baseCheck = window.__tipsCheckAnswer;
+  window.__tipsCheckAnswer = (promptObj, typed) => {
+    const prev = state.tips[promptObj.id]?.box ?? 1;
+    const ok = baseCheck(promptObj, typed);
+    const next = state.tips[promptObj.id].box;
+    showToast(promptObj.id, next - prev);
+    return ok;
+  };
+
+  document.getElementById('open-mastery').addEventListener('click', () => {
+    renderMastery();
+    document.getElementById('mastery-panel').classList.toggle('hidden');
+  });
+
+  document.getElementById('export-leitner').addEventListener('click', async () => {
+    const { exportJson } = await import('./leitner.js');
+    await navigator.clipboard.writeText(exportJson(state));
+    alert('Copied Leitner state to clipboard.');
+  });
+
+  document.getElementById('import-leitner').addEventListener('click', async () => {
+    const { importJson, saveState } = await import('./leitner.js');
+    const json = prompt('Paste Leitner state JSON:');
+    if (!json) return;
+    try {
+      state = importJson(json);
+      saveState(state);
+      renderMastery();
+      alert('Imported.');
+    } catch (e) {
+      alert('Import failed: ' + e.message);
+    }
+  });
 }
 
-if (tipsFlagOn) {
-  initTipsMode().catch(err => console.error('tips mode failed', err));
-}
+initTipsMode().catch(err => {
+  console.error('tips mode failed, falling back to static prompts', err);
+});
